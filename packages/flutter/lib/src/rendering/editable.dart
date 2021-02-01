@@ -383,6 +383,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
   TextSelectionDelegate textSelectionDelegate;
 
   Rect? _lastCaretRect;
+  late Rect _currentCaretRect;
 
   /// Track whether position of the start of the selected text is within the viewport.
   ///
@@ -2124,7 +2125,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     return Offset(pixelPerfectOffsetX, pixelPerfectOffsetY);
   }
 
-  void _paintCaret(Canvas canvas, Offset effectiveOffset, TextPosition textPosition) {
+  void _paintCaretIfNeeded(Canvas canvas, Offset effectiveOffset, TextPosition textPosition) {
     assert(_textLayoutLastMaxWidth == constraints.maxWidth &&
            _textLayoutLastMinWidth == constraints.minWidth,
       'Last width ($_textLayoutLastMinWidth, $_textLayoutLastMaxWidth) not the same as max width constraint (${constraints.minWidth}, ${constraints.maxWidth}).');
@@ -2171,6 +2172,10 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     }
 
     caretRect = caretRect.shift(_getPixelPerfectCursorOffset(caretRect));
+    _currentCaretRect = caretRect;
+
+    if (!_showCursor.value)
+      return;
 
     if (cursorRadius == null) {
       canvas.drawRect(caretRect, paint);
@@ -2178,11 +2183,13 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
       final RRect caretRRect = RRect.fromRectAndRadius(caretRect, cursorRadius!);
       canvas.drawRRect(caretRRect, paint);
     }
+  }
 
-    if (caretRect != _lastCaretRect) {
-      _lastCaretRect = caretRect;
+  void _updateCaretRect() {
+    if (_currentCaretRect != _lastCaretRect) {
+      _lastCaretRect = _currentCaretRect;
       if (onCaretChanged != null)
-        onCaretChanged!(caretRect);
+        onCaretChanged!(_currentCaretRect);
     }
   }
 
@@ -2193,7 +2200,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     assert(boundedOffset != null);
     assert(lastTextPosition != null);
     if (state == FloatingCursorDragState.Start) {
-      _relativeOrigin = const Offset(0, 0);
+      _relativeOrigin = Offset.zero;
       _previousOffset = null;
       _resetOriginOnBottom = false;
       _resetOriginOnTop = false;
@@ -2242,7 +2249,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
   // The relative origin in relation to the distance the user has theoretically
   // dragged the floating cursor offscreen. This value is used to account for the
   // difference in the rendering position and the raw offset value.
-  Offset _relativeOrigin = const Offset(0, 0);
+  Offset _relativeOrigin = Offset.zero;
   Offset? _previousOffset;
   bool _resetOriginOnLeft = false;
   bool _resetOriginOnRight = false;
@@ -2252,7 +2259,7 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
 
   /// Returns the position within the text field closest to the raw cursor offset.
   Offset calculateBoundedFloatingCursorOffset(Offset rawCursorOffset) {
-    Offset deltaPosition = const Offset(0, 0);
+    Offset deltaPosition = Offset.zero;
     final double topBound = -floatingCursorAddedMargin.top;
     final double bottomBound = _textPainter.height - preferredLineHeight + floatingCursorAddedMargin.bottom;
     final double leftBound = -floatingCursorAddedMargin.left;
@@ -2333,11 +2340,11 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     final Offset effectiveOffset = offset + _paintOffset;
 
     bool showSelection = false;
-    bool showCaret = false;
+    bool canShowCaret = false;
 
     if (selection != null && !_floatingCursorOn) {
-      if (selection!.isCollapsed && _showCursor.value && cursorColor != null)
-        showCaret = true;
+      if (selection!.isCollapsed && cursorColor != null)
+        canShowCaret = true;
       else if (!selection!.isCollapsed && _selectionColor != null)
         showSelection = true;
       _updateSelectionExtentsVisibility(effectiveOffset);
@@ -2356,17 +2363,20 @@ class RenderEditable extends RenderBox with RelayoutWhenSystemFontsChangeMixin {
     if (paintCursorAboveText)
       _textPainter.paint(context.canvas, effectiveOffset);
 
-    if (showCaret) {
+    if (canShowCaret) {
       assert(selection != null);
-      _paintCaret(context.canvas, effectiveOffset, selection!.extent);
+      _paintCaretIfNeeded(context.canvas, effectiveOffset, selection!.extent);
+      _updateCaretRect();
     }
 
     if (!paintCursorAboveText)
       _textPainter.paint(context.canvas, effectiveOffset);
 
     if (_floatingCursorOn) {
-      if (_resetFloatingCursorAnimationValue == null)
-        _paintCaret(context.canvas, effectiveOffset, _floatingCursorTextPosition);
+      if (_resetFloatingCursorAnimationValue == null) {
+        _paintCaretIfNeeded(context.canvas, effectiveOffset, _floatingCursorTextPosition);
+        _updateCaretRect();
+      }
       _paintFloatingCaret(context.canvas, _floatingCursorOffset);
     }
   }

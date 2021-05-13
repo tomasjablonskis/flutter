@@ -165,13 +165,13 @@ class _SnackBarActionState extends State<SnackBarAction> {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     child: Text("Show Snackbar"),
+///     child: const Text('Show Snackbar'),
 ///     onPressed: () {
 ///       ScaffoldMessenger.of(context).showSnackBar(
 ///         SnackBar(
-///           content: Text("Awesome Snackbar!"),
+///           content: const Text('Awesome Snackbar!'),
 ///           action: SnackBarAction(
-///             label: "Action",
+///             label: 'Action',
 ///             onPressed: () {
 ///               // Code to execute.
 ///             },
@@ -193,21 +193,22 @@ class _SnackBarActionState extends State<SnackBarAction> {
 /// ```dart
 /// Widget build(BuildContext context) {
 ///   return ElevatedButton(
-///     child: Text("Show Snackbar"),
+///     child: const Text('Show Snackbar'),
 ///     onPressed: () {
 ///       ScaffoldMessenger.of(context).showSnackBar(
 ///         SnackBar(
 ///           action: SnackBarAction(
-///             label: "Action",
+///             label: 'Action',
 ///             onPressed: () {
 ///               // Code to execute.
 ///             },
 ///           ),
-///           content: Text("Awesome SnackBar!"),
-///           duration: Duration(milliseconds: 1500),
+///           content: const Text('Awesome SnackBar!'),
+///           duration: const Duration(milliseconds: 1500),
 ///           width: 280.0, // Width of the SnackBar.
-///           padding: EdgeInsets.symmetric(
-///             horizontal: 8.0), // Inner padding for SnackBar content.
+///           padding: const EdgeInsets.symmetric(
+///             horizontal: 8.0,  // Inner padding for SnackBar content.
+///           ),
 ///           behavior: SnackBarBehavior.floating,
 ///           shape: RoundedRectangleBorder(
 ///             borderRadius: BorderRadius.circular(10.0),
@@ -251,6 +252,7 @@ class SnackBar extends StatefulWidget {
     this.duration = _snackBarDisplayDuration,
     this.animation,
     this.onVisible,
+    this.dismissDirection = DismissDirection.down,
   }) : assert(elevation == null || elevation >= 0.0),
        assert(content != null),
        assert(
@@ -367,6 +369,11 @@ class SnackBar extends StatefulWidget {
   /// Called the first time that the snackbar is visible within a [Scaffold].
   final VoidCallback? onVisible;
 
+  /// The direction in which the SnackBar can be dismissed.
+  ///
+  /// Cannot be null, defaults to [DismissDirection.down].
+  final DismissDirection dismissDirection;
+
   // API for ScaffoldMessengerState.showSnackBar():
 
   /// Creates an animation controller useful for driving a snack bar's entrance and exit animation.
@@ -397,6 +404,7 @@ class SnackBar extends StatefulWidget {
       duration: duration,
       animation: newAnimation,
       onVisible: onVisible,
+      dismissDirection: dismissDirection,
     );
   }
 
@@ -592,7 +600,7 @@ class _SnackBarState extends State<SnackBar> {
       },
       child: Dismissible(
         key: const Key('dismissible'),
-        direction: DismissDirection.down,
+        direction: widget.dismissDirection,
         resizeDuration: null,
         onDismissed: (DismissDirection direction) {
           Scaffold.of(context).removeCurrentSnackBar(reason: SnackBarClosedReason.swipe);

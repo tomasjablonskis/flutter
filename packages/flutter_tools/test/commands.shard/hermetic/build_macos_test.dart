@@ -20,11 +20,11 @@ import 'package:flutter_tools/src/features.dart';
 import 'package:flutter_tools/src/ios/xcodeproj.dart';
 import 'package:flutter_tools/src/project.dart';
 import 'package:flutter_tools/src/reporting/reporting.dart';
-import 'package:process/process.dart';
 
 import '../../src/common.dart';
 import '../../src/context.dart';
-import '../../src/testbed.dart';
+import '../../src/fakes.dart';
+import '../../src/test_flutter_command_runner.dart';
 
 class FakeXcodeProjectInterpreterWithProfile extends FakeXcodeProjectInterpreter {
   @override
@@ -45,6 +45,15 @@ final Platform macosPlatform = FakePlatform(
     'HOME': '/',
   }
 );
+
+final FakePlatform macosPlatformCustomEnv = FakePlatform(
+    operatingSystem: 'macos',
+    environment: <String, String>{
+      'FLUTTER_ROOT': '/',
+      'HOME': '/',
+    }
+);
+
 final Platform notMacosPlatform = FakePlatform(
   operatingSystem: 'linux',
   environment: <String, String>{
@@ -55,6 +64,8 @@ final Platform notMacosPlatform = FakePlatform(
 void main() {
   FileSystem fileSystem;
   TestUsage usage;
+  FakeProcessManager fakeProcessManager;
+  XcodeProjectInterpreter xcodeProjectInterpreter;
 
   setUpAll(() {
     Cache.disableLocking();
@@ -63,6 +74,8 @@ void main() {
   setUp(() {
     fileSystem = MemoryFileSystem.test();
     usage = TestUsage();
+    fakeProcessManager = FakeProcessManager.empty();
+    xcodeProjectInterpreter = FakeXcodeProjectInterpreter();
   });
 
   // Sets up the minimal mock project files necessary to look like a Flutter project.
@@ -118,7 +131,9 @@ void main() {
 
     expect(createTestCommandRunner(command).run(
       const <String>['build', 'macos', '--no-pub']
-    ), throwsToolExit(message: 'No macOS desktop project configured'));
+    ), throwsToolExit(message: 'No macOS desktop project configured. See '
+      'https://flutter.dev/desktop#add-desktop-support-to-an-existing-flutter-app '
+      'to learn about adding macOS support to a project.'));
   }, overrides: <Type, Generator>{
     Platform: () => macosPlatform,
     FileSystem: () => fileSystem,
@@ -129,18 +144,33 @@ void main() {
   testUsingContext('macOS build fails on non-macOS platform', () async {
     final BuildCommand command = BuildCommand();
     fileSystem.file('pubspec.yaml').createSync();
-    fileSystem.file('.packages').createSync();
     fileSystem.file(fileSystem.path.join('lib', 'main.dart'))
       .createSync(recursive: true);
 
     expect(createTestCommandRunner(command).run(
       const <String>['build', 'macos', '--no-pub']
-    ), throwsToolExit());
+    ), throwsToolExit(message: '"build macos" only supported on macOS hosts.'));
   }, overrides: <Type, Generator>{
     Platform: () => notMacosPlatform,
     FileSystem: () => fileSystem,
     ProcessManager: () => FakeProcessManager.any(),
     FeatureFlags: () => TestFeatureFlags(isMacOSEnabled: true),
+  });
+
+  testUsingContext('macOS build fails when feature is disabled', () async {
+    final BuildCommand command = BuildCommand();
+    fileSystem.file('pubspec.yaml').createSync();
+    fileSystem.file(fileSystem.path.join('lib', 'main.dart'))
+        .createSync(recursive: true);
+
+    expect(createTestCommandRunner(command).run(
+        const <String>['build', 'macos', '--no-pub']
+    ), throwsToolExit(message: '"build macos" is not currently supported. To enable, run "flutter config --enable-macos-desktop".'));
+  }, overrides: <Type, Generator>{
+    Platform: () => macosPlatform,
+    FileSystem: () => fileSystem,
+    ProcessManager: () => FakeProcessManager.any(),
+    FeatureFlags: () => TestFeatureFlags(isMacOSEnabled: false),
   });
 
   testUsingContext('macOS build forwards error stdout to status logger error', () async {
@@ -257,16 +287,22 @@ void main() {
       .readAsLinesSync();
 
     expect(contents, containsAll(<String>[
-      'DART_DEFINES=foo.bar%3D2,fizz.far%3D3',
+      'FLUTTER_APPLICATION_PATH=/',
+      'FLUTTER_TARGET=lib/other.dart',
+      'FLUTTER_BUILD_DIR=build',
+      'FLUTTER_BUILD_NAME=1.0.0',
+      'FLUTTER_BUILD_NUMBER=1',
+      'EXCLUDED_ARCHS=arm64',
+      'DART_DEFINES=Zm9vLmJhcj0y,Zml6ei5mYXI9Mw==',
       'DART_OBFUSCATION=true',
-      'EXTRA_FRONT_END_OPTIONS=--enable-experiment%3Dnon-nullable',
-      'EXTRA_GEN_SNAPSHOT_OPTIONS=--enable-experiment%3Dnon-nullable',
+      'EXTRA_FRONT_END_OPTIONS=--enable-experiment=non-nullable',
+      'EXTRA_GEN_SNAPSHOT_OPTIONS=--enable-experiment=non-nullable',
       'SPLIT_DEBUG_INFO=foo/',
       'TRACK_WIDGET_CREATION=true',
       'TREE_SHAKE_ICONS=true',
-      'FLUTTER_TARGET=lib/other.dart',
       'BUNDLE_SKSL_PATH=foo/bar.sksl.json',
-      'EXCLUDED_ARCHS=arm64',
+      'PACKAGE_CONFIG=/.dart_tool/package_config.json',
+      'COCOAPODS_PARALLEL_CODE_SIGN=true',
     ]));
   }, overrides: <Type, Generator>{
     FileSystem: () => fileSystem,
@@ -276,6 +312,50 @@ void main() {
     Platform: () => macosPlatform,
     FeatureFlags: () => TestFeatureFlags(isMacOSEnabled: true),
     Artifacts: () => Artifacts.test(),
+  });
+
+  testUsingContext('build settings contains Flutter Xcode environment variables', () async {
+
+    macosPlatformCustomEnv.environment = Map<String, String>.unmodifiable(<String, String>{
+      'FLUTTER_XCODE_ASSETCATALOG_COMPILER_APPICON_NAME': 'AppIcon.special'
+    });
+
+    final FlutterProject flutterProject = FlutterProject.fromDirectory(fileSystem.currentDirectory);
+    final Directory flutterBuildDir = fileSystem.directory(getMacOSBuildDirectory());
+
+    fakeProcessManager.addCommands(<FakeCommand>[
+      FakeCommand(
+        command: <String>[
+          '/usr/bin/env',
+          'xcrun',
+          'xcodebuild',
+          '-workspace', flutterProject.macos.xcodeWorkspace.path,
+          '-configuration', 'Debug',
+          '-scheme', 'Runner',
+          '-derivedDataPath', flutterBuildDir.absolute.path,
+          'OBJROOT=${fileSystem.path.join(flutterBuildDir.absolute.path, 'Build', 'Intermediates.noindex')}',
+          'SYMROOT=${fileSystem.path.join(flutterBuildDir.absolute.path, 'Build', 'Products')}',
+          '-quiet',
+          'COMPILER_INDEX_STORE_ENABLE=NO',
+          'ASSETCATALOG_COMPILER_APPICON_NAME=AppIcon.special',
+        ],
+      ),
+    ]);
+
+    final BuildCommand command = BuildCommand();
+    createMinimalMockProjectFiles();
+
+    await createTestCommandRunner(command).run(
+        const <String>['build', 'macos', '--debug', '--no-pub']
+    );
+
+    expect(fakeProcessManager.hasRemainingExpectations, isFalse);
+  }, overrides: <Type, Generator>{
+    FileSystem: () => fileSystem,
+    ProcessManager: () => fakeProcessManager,
+    Platform: () => macosPlatformCustomEnv,
+    FeatureFlags: () => TestFeatureFlags(isMacOSEnabled: true),
+    XcodeProjectInterpreter: () => xcodeProjectInterpreter,
   });
 
   testUsingContext('macOS build supports build-name and build-number', () async {

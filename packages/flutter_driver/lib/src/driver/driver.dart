@@ -147,7 +147,12 @@ abstract class FlutterDriver {
     Map<String, dynamic>? headers,
   }) async {
     if (Platform.environment['FLUTTER_WEB_TEST'] != null) {
-      return WebFlutterDriver.connectWeb(hostUrl: dartVmServiceUrl, timeout: timeout);
+      return WebFlutterDriver.connectWeb(
+        hostUrl: dartVmServiceUrl,
+        timeout: timeout,
+        printCommunication: printCommunication,
+        logCommunicationToFile: logCommunicationToFile,
+      );
     }
     return VMServiceFlutterDriver.connect(
       dartVmServiceUrl: dartVmServiceUrl,
@@ -218,6 +223,11 @@ abstract class FlutterDriver {
   /// Waits until [finder] can no longer locate the target.
   Future<void> waitForAbsent(SerializableFinder finder, { Duration? timeout }) async {
     await sendCommand(WaitForAbsent(finder, timeout: timeout));
+  }
+
+  /// Waits until [finder] is tappable.
+  Future<void> waitForTappable(SerializableFinder finder, { Duration? timeout }) async {
+    await sendCommand(WaitForTappable(finder, timeout: timeout));
   }
 
   /// Waits until the given [waitCondition] is satisfied.
@@ -311,7 +321,7 @@ abstract class FlutterDriver {
   /// See also:
   ///
   ///  * [getWidgetDiagnostics], which gets the [DiagnosticsNode] of a [Widget].
-  Future<Map<String, Object>> getRenderObjectDiagnostics(
+  Future<Map<String, Object?>> getRenderObjectDiagnostics(
       SerializableFinder finder, {
       int subtreeDepth = 0,
       bool includeProperties = true,
@@ -323,7 +333,7 @@ abstract class FlutterDriver {
       subtreeDepth: subtreeDepth,
       includeProperties: includeProperties,
       timeout: timeout,
-    )) as Map<String, Object>;
+    ));
   }
 
   /// Returns a JSON map of the [DiagnosticsNode] that is associated with the
@@ -344,7 +354,7 @@ abstract class FlutterDriver {
   ///
   ///  * [getRenderObjectDiagnostics], which gets the [DiagnosticsNode] of a
   ///    [RenderObject].
-  Future<Map<String, Object>> getWidgetDiagnostics(
+  Future<Map<String, Object?>> getWidgetDiagnostics(
     SerializableFinder finder, {
     int subtreeDepth = 0,
     bool includeProperties = true,
@@ -356,7 +366,7 @@ abstract class FlutterDriver {
       subtreeDepth: subtreeDepth,
       includeProperties: includeProperties,
       timeout: timeout,
-    )) as Map<String, Object>;
+    ));
   }
 
   /// Tell the driver to perform a scrolling action.
@@ -504,7 +514,7 @@ abstract class FlutterDriver {
   /// It's expected that the application has registered a [DataHandler]
   /// callback in [enableFlutterDriverExtension] that can successfully handle
   /// these requests.
-  Future<String> requestData(String message, { Duration? timeout }) async {
+  Future<String> requestData(String? message, { Duration? timeout }) async {
     return RequestDataResult.fromJson(await sendCommand(RequestData(message, timeout: timeout))).message;
   }
 
@@ -656,7 +666,7 @@ abstract class FlutterDriver {
   ///
   /// For [WebFlutterDriver], this is only supported for Chrome.
   Future<Timeline> traceAction(
-    Future<dynamic> action(), {
+    Future<dynamic> Function() action, {
     List<TimelineStream> streams = const <TimelineStream>[TimelineStream.all],
     bool retainPriorEvents = false,
   }) async {
@@ -691,7 +701,7 @@ abstract class FlutterDriver {
   /// With frame sync disabled, it's the responsibility of the test author to
   /// ensure that no action is performed while the app is undergoing a
   /// transition to avoid flakiness.
-  Future<T> runUnsynchronized<T>(Future<T> action(), { Duration? timeout }) async {
+  Future<T> runUnsynchronized<T>(Future<T> Function() action, { Duration? timeout }) async {
     await sendCommand(SetFrameSync(false, timeout: timeout));
     T result;
     try {

@@ -203,6 +203,61 @@ class DevFSStringContent extends DevFSByteContent {
   }
 }
 
+/// A string compressing DevFSContent.
+///
+/// A specialized DevFSContent similar to DevFSByteContent where the contents
+/// are the compressed bytes of a string. Its difference is that the original
+/// uncompressed string can be compared with directly without the indirection
+/// of a compute-expensive uncompress/decode and compress/encode to compare
+/// the strings.
+///
+/// The `hintString` parameter is a zlib dictionary hinting mechanism to suggest
+/// the most common string occurrences to potentially assist with compression.
+class DevFSStringCompressingBytesContent extends DevFSContent {
+  DevFSStringCompressingBytesContent(this._string, { String hintString })
+    : _compressor = ZLibEncoder(
+      dictionary: hintString == null
+          ? null
+          : utf8.encode(hintString),
+      gzip: true,
+      level: 9,
+    );
+
+  final String _string;
+  final ZLibEncoder _compressor;
+  final DateTime _modificationTime = DateTime.now();
+
+  List<int> _bytes;
+  bool _isModified = true;
+
+  List<int> get bytes => _bytes ??= _compressor.convert(utf8.encode(_string));
+
+  /// Return true only once so that the content is written to the device only once.
+  @override
+  bool get isModified {
+    final bool modified = _isModified;
+    _isModified = false;
+    return modified;
+  }
+
+  @override
+  bool isModifiedAfter(DateTime time) {
+    return time == null || _modificationTime.isAfter(time);
+  }
+
+  @override
+  int get size => bytes.length;
+
+  @override
+  Future<List<int>> contentsAsBytes() async => bytes;
+
+  @override
+  Stream<List<int>> contentsAsStream() => Stream<List<int>>.value(bytes);
+
+  /// This checks the source string with another string.
+  bool equals(String string) => _string == string;
+}
+
 class DevFSException implements Exception {
   DevFSException(this.message, [this.error, this.stackTrace]);
   final String message;
@@ -226,7 +281,7 @@ abstract class DevFSWriter {
 class _DevFSHttpWriter implements DevFSWriter {
   _DevFSHttpWriter(
     this.fsName,
-    vm_service.VmService serviceProtocol, {
+    FlutterVmService serviceProtocol, {
     @required OperatingSystemUtils osUtils,
     @required HttpClient httpClient,
     @required Logger logger,
@@ -372,7 +427,7 @@ class DevFS {
   ///
   /// Failed uploads are retried after [uploadRetryThrottle] duration, defaults to 500ms.
   DevFS(
-    vm_service.VmService serviceProtocol,
+    FlutterVmService serviceProtocol,
     this.fsName,
     this.rootDirectory, {
     @required OperatingSystemUtils osUtils,
@@ -394,7 +449,7 @@ class DevFS {
           : context.get<HttpClientFactory>()())
       );
 
-  final vm_service.VmService _vmService;
+  final FlutterVmService _vmService;
   final _DevFSHttpWriter _httpWriter;
   final Logger _logger;
   final FileSystem _fileSystem;
@@ -524,6 +579,8 @@ class DevFS {
       mainUri,
       invalidatedFiles,
       outputPath: dillOutputPath,
+      fs: _fileSystem,
+      projectRootPath: projectRootPath,
       packageConfig: packageConfig,
     );
     if (bundle != null) {

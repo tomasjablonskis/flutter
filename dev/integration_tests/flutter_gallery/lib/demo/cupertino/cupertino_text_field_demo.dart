@@ -5,10 +5,12 @@
 import 'package:flutter/cupertino.dart';
 
 class CupertinoTextFieldDemo extends StatefulWidget {
+  const CupertinoTextFieldDemo({Key? key}) : super(key: key);
+
   static const String routeName = '/cupertino/text_fields';
 
   @override
-  _CupertinoTextFieldDemoState createState() {
+  State<CupertinoTextFieldDemo> createState() {
     return _CupertinoTextFieldDemoState();
   }
 }

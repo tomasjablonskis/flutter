@@ -294,12 +294,12 @@ class UndoableDirectionalFocusAction extends UndoableFocusActionBase<Directional
 
 /// A button class that takes focus when clicked.
 class DemoButton extends StatefulWidget {
-  const DemoButton({this.name});
+  const DemoButton({Key key, this.name}) : super(key: key);
 
   final String name;
 
   @override
-  _DemoButtonState createState() => _DemoButtonState();
+  State<DemoButton> createState() => _DemoButtonState();
 }
 
 class _DemoButtonState extends State<DemoButton> {
@@ -351,7 +351,7 @@ class FocusDemo extends StatefulWidget {
   static GlobalKey appKey = GlobalKey();
 
   @override
-  _FocusDemoState createState() => _FocusDemoState();
+  State<FocusDemo> createState() => _FocusDemoState();
 }
 
 class _FocusDemoState extends State<FocusDemo> {
@@ -406,9 +406,9 @@ class _FocusDemoState extends State<FocusDemo> {
       child: FocusTraversalGroup(
         policy: ReadingOrderTraversalPolicy(),
         child: Shortcuts(
-          shortcuts: <LogicalKeySet, Intent>{
-            LogicalKeySet(Platform.isMacOS ? LogicalKeyboardKey.meta : LogicalKeyboardKey.control, LogicalKeyboardKey.shift, LogicalKeyboardKey.keyZ): const RedoIntent(),
-            LogicalKeySet(Platform.isMacOS ? LogicalKeyboardKey.meta : LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ): const UndoIntent(),
+          shortcuts: <ShortcutActivator, Intent>{
+            SingleActivator(LogicalKeyboardKey.keyZ, meta: Platform.isMacOS, control: !Platform.isMacOS, shift: true): const RedoIntent(),
+            SingleActivator(LogicalKeyboardKey.keyZ, meta: Platform.isMacOS, control: !Platform.isMacOS): const UndoIntent(),
           },
           child: FocusScope(
             key: FocusDemo.appKey,

@@ -16,6 +16,8 @@ RenderBoxToRenderSectorAdapter initCircle() {
 }
 
 class SectorApp extends StatefulWidget {
+  const SectorApp({Key? key}) : super(key: key);
+
   @override
   SectorAppState createState() => SectorAppState();
 }
@@ -133,7 +135,7 @@ class SectorAppState extends State<SectorApp> {
           child: Container(
             margin: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
-              border: Border.all()
+              border: Border.all(),
             ),
             padding: const EdgeInsets.all(8.0),
             child: WidgetToRenderBoxAdapter(
@@ -163,5 +165,5 @@ class SectorAppState extends State<SectorApp> {
 }
 
 void main() {
-  runApp(SectorApp());
+  runApp(const SectorApp());
 }

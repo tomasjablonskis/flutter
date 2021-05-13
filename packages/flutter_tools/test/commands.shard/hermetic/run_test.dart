@@ -11,7 +11,6 @@ import 'package:file/memory.dart';
 import 'package:flutter_tools/src/application_package.dart';
 import 'package:flutter_tools/src/artifacts.dart';
 import 'package:flutter_tools/src/base/common.dart';
-import 'package:flutter_tools/src/base/context.dart';
 import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/io.dart';
 import 'package:flutter_tools/src/base/logger.dart';
@@ -21,15 +20,20 @@ import 'package:flutter_tools/src/cache.dart';
 import 'package:flutter_tools/src/commands/run.dart';
 import 'package:flutter_tools/src/device.dart';
 import 'package:flutter_tools/src/globals.dart' as globals;
+import 'package:flutter_tools/src/project.dart';
 import 'package:flutter_tools/src/reporting/reporting.dart';
+import 'package:flutter_tools/src/resident_runner.dart';
 import 'package:flutter_tools/src/runner/flutter_command.dart';
+import 'package:flutter_tools/src/vmservice.dart';
+import 'package:meta/meta.dart';
 import 'package:mockito/mockito.dart';
+import 'package:vm_service/vm_service.dart';
 
 import '../../src/common.dart';
 import '../../src/context.dart';
+import '../../src/fake_devices.dart';
 import '../../src/fakes.dart';
-import '../../src/mocks.dart';
-import '../../src/testbed.dart';
+import '../../src/test_flutter_command_runner.dart';
 
 void main() {
   group('run', () {
@@ -47,12 +51,10 @@ void main() {
 
     testUsingContext('fails when target not found', () async {
       final RunCommand command = RunCommand();
-      try {
-        await createTestCommandRunner(command).run(<String>['run', '-t', 'abc123', '--no-pub']);
-        fail('Expect exception');
-      } on ToolExit catch (e) {
-        expect(e.exitCode ?? 1, 1);
-      }
+      expect(
+        () => createTestCommandRunner(command).run(<String>['run', '-t', 'abc123', '--no-pub']),
+        throwsA(isA<ToolExit>().having((ToolExit error) => error.exitCode, 'exitCode', anyOf(isNull, 1))),
+      );
     }, overrides: <Type, Generator>{
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
@@ -65,18 +67,20 @@ void main() {
       fileSystem.file('.packages').createSync();
 
       final RunCommand command = RunCommand();
-      try {
-        await createTestCommandRunner(command).run(<String>[
+      await expectLater(
+        () => createTestCommandRunner(command).run(<String>[
           'run',
           '--use-application-binary=app/bar/faz',
           '--fast-start',
           '--no-pub',
           '--show-test-device',
-        ]);
-        fail('Expect exception');
-      } on Exception catch (e) {
-        expect(e.toString(), isNot(contains('--fast-start is not supported with --use-application-binary')));
-      }
+        ]),
+        throwsA(isException.having(
+          (Exception exception) => exception.toString(),
+          'toString',
+          isNot(contains('--fast-start is not supported with --use-application-binary')),
+        )),
+      );
     }, overrides: <Type, Generator>{
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
@@ -93,15 +97,13 @@ void main() {
         ..createSync(recursive: true);
 
       final RunCommand command = RunCommand();
-      try {
-        await createTestCommandRunner(command).run(<String>[
+      await expectLater(
+        () => createTestCommandRunner(command).run(<String>[
           'run',
           '--no-pub',
-        ]);
-        fail('Expect exception');
-      } on Exception catch (e) {
-        expect(e, isA<ToolExit>());
-      }
+        ]),
+        throwsToolExit(),
+      );
       final BufferLogger bufferLogger = globals.logger as BufferLogger;
       expect(
         bufferLogger.statusText,
@@ -120,16 +122,13 @@ void main() {
         .createSync(recursive: true);
 
       final RunCommand command = RunCommand();
-      try {
-        await createTestCommandRunner(command).run(<String>[
+      await expectLater(
+        () => createTestCommandRunner(command).run(<String>[
           'run',
           '--no-pub',
-        ]);
-        fail('Expect exception');
-      } on Exception catch (e) {
-        expect(e, isA<ToolExit>());
-        expect(e.toString(), contains('No pubspec.yaml file found'));
-      }
+        ]),
+        throwsToolExit(message: 'No pubspec.yaml file found'),
+      );
     }, overrides: <Type, Generator>{
       FileSystem: () => fileSystem,
       ProcessManager: () => FakeProcessManager.any(),
@@ -140,7 +139,6 @@ void main() {
       MemoryFileSystem fs;
       Artifacts artifacts;
       MockCache mockCache;
-      MockProcessManager mockProcessManager;
       TestUsage usage;
       Directory tempDir;
 
@@ -149,7 +147,6 @@ void main() {
         mockCache = MockCache();
         usage = TestUsage();
         fs = MemoryFileSystem.test();
-        mockProcessManager = MockProcessManager();
 
         tempDir = fs.systemTempDirectory.createTempSync('flutter_run_test.');
         fs.currentDirectory = tempDir;
@@ -178,16 +175,14 @@ void main() {
           (Invocation invocation) => Future<List<Device>>.value(noDevices)
         );
 
-        try {
-          await createTestCommandRunner(command).run(<String>[
+        await expectLater(
+          () => createTestCommandRunner(command).run(<String>[
             'run',
             '--no-pub',
             '--no-hot',
-          ]);
-          fail('Expect exception');
-        } on ToolExit catch (e) {
-          expect(e.message, null);
-        }
+          ]),
+          throwsA(isA<ToolExit>().having((ToolExit error) => error.message, 'message', isNull)),
+        );
 
         expect(
           testLogger.statusText,
@@ -196,7 +191,7 @@ void main() {
       }, overrides: <Type, Generator>{
         DeviceManager: () => mockDeviceManager,
         FileSystem: () => fs,
-        ProcessManager: () => mockProcessManager,
+        ProcessManager: () => FakeProcessManager.any(),
       });
 
       testUsingContext('fails when targeted device is not Android with --device-user', () async {
@@ -254,16 +249,14 @@ void main() {
             (Invocation invocation) => Future<List<Device>>.value(<Device>[]),
         );
 
-        try {
-          await createTestCommandRunner(command).run(<String>[
+        await expectLater(
+          () => createTestCommandRunner(command).run(<String>[
             'run',
             '--no-pub',
             '--no-hot',
-          ]);
-          fail('Expect exception');
-        } on ToolExit catch (e) {
-          expect(e.message, null);
-        }
+          ]),
+          throwsA(isA<ToolExit>().having((ToolExit error) => error.message, 'message', isNull)),
+        );
 
         expect(
           testLogger.statusText,
@@ -284,7 +277,7 @@ void main() {
       }, overrides: <Type, Generator>{
         DeviceManager: () => mockDeviceManager,
         FileSystem: () => fs,
-        ProcessManager: () => mockProcessManager,
+        ProcessManager: () => FakeProcessManager.any(),
       });
 
       testUsingContext('updates cache before checking for devices', () async {
@@ -328,7 +321,7 @@ void main() {
         Cache: () => mockCache,
         DeviceManager: () => mockDeviceManager,
         FileSystem: () => fs,
-        ProcessManager: () => mockProcessManager,
+        ProcessManager: () => FakeProcessManager.any(),
       });
 
       testUsingContext('passes device target platform to usage', () async {
@@ -382,10 +375,10 @@ void main() {
         )));
       }, overrides: <Type, Generator>{
         Artifacts: () => artifacts,
-        Cache: () => mockCache,
+        Cache: () => Cache.test(processManager: FakeProcessManager.any()),
         DeviceManager: () => mockDeviceManager,
         FileSystem: () => fs,
-        ProcessManager: () => mockProcessManager,
+        ProcessManager: () => FakeProcessManager.any(),
         Usage: () => usage,
       });
     });
@@ -481,6 +474,40 @@ void main() {
       expect(dartDefines, <String>['FLUTTER_WEB_AUTO_DETECT=false','FLUTTER_WEB_USE_SKIA=false']);
     });
   });
+
+  testUsingContext('Flutter run catches service has disappear errors and throws a tool exit', () async {
+    final FakeResidentRunner residentRunner = FakeResidentRunner();
+    residentRunner.rpcError = RPCError('flutter._listViews', RPCErrorCodes.kServiceDisappeared, '');
+    final TestRunCommandWithFakeResidentRunner command = TestRunCommandWithFakeResidentRunner();
+    command.fakeResidentRunner = residentRunner;
+
+    await expectToolExitLater(createTestCommandRunner(command).run(<String>[
+      'run',
+      '--no-pub',
+    ]), contains('Lost connection to device.'));
+  });
+
+  testUsingContext('Flutter run does not catch other RPC errors', () async {
+    final FakeResidentRunner residentRunner = FakeResidentRunner();
+    residentRunner.rpcError = RPCError('flutter._listViews', RPCErrorCodes.kInvalidParams, '');
+    final TestRunCommandWithFakeResidentRunner command = TestRunCommandWithFakeResidentRunner();
+    command.fakeResidentRunner = residentRunner;
+
+    await expectLater(() => createTestCommandRunner(command).run(<String>[
+      'run',
+      '--no-pub',
+    ]), throwsA(isA<RPCError>()));
+  });
+
+  testUsingContext('Passes sksl bundle info the build options', () async {
+    final TestRunCommandWithFakeResidentRunner command = TestRunCommandWithFakeResidentRunner();
+
+    await expectLater(() => createTestCommandRunner(command).run(<String>[
+      'run',
+      '--no-pub',
+      '--bundle-sksl-path=foo.json',
+    ]), throwsToolExit(message: 'No SkSL shader bundle found at foo.json'));
+  });
 }
 
 class MockCache extends Mock implements Cache {}
@@ -524,7 +551,7 @@ class FakeDevice extends Fake implements Device {
   bool supportsRuntimeMode(BuildMode mode) => true;
 
   @override
-  bool get supportsHotReload => false;
+  bool supportsHotReload = false;
 
   @override
   bool get supportsFastStart => false;
@@ -577,5 +604,56 @@ class FakeDevice extends Fake implements Device {
       _throwToolExit(kSuccess);
     }
     return null;
+  }
+}
+
+class FakeApplicationPackageFactory extends Fake implements ApplicationPackageFactory {
+  ApplicationPackage package;
+
+  @override
+  Future<ApplicationPackage> getPackageForPlatform(
+    TargetPlatform platform, {
+    BuildInfo buildInfo,
+    File applicationBinary,
+  }) async {
+    return package;
+  }
+}
+
+class TestRunCommandWithFakeResidentRunner extends RunCommand {
+  FakeResidentRunner fakeResidentRunner;
+
+  @override
+  Future<ResidentRunner> createRunner({
+    @required bool hotMode,
+    @required List<FlutterDevice> flutterDevices,
+    @required String applicationBinaryPath,
+    @required FlutterProject flutterProject,
+  }) async {
+    return fakeResidentRunner;
+  }
+
+  @override
+  // ignore: must_call_super
+  Future<void> validateCommand() async {
+    devices = <Device>[FakeDevice()..supportsHotReload = true];
+  }
+}
+
+class FakeResidentRunner extends Fake implements ResidentRunner {
+  RPCError rpcError;
+
+  @override
+  Future<int> run({
+    Completer<DebugConnectionInfo> connectionInfoCompleter,
+    Completer<void> appStartedCompleter,
+    bool enableDevTools = false,
+    String route,
+  }) async {
+    await null;
+    if (rpcError != null) {
+      throw rpcError;
+    }
+    return 0;
   }
 }

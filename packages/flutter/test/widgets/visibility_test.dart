@@ -84,7 +84,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), const Size(800.0, 600.0));
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -92,7 +92,7 @@ void main() {
       child: Visibility(
         child: testChild,
         visible: false,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsNothing);
     expect(find.byType(Placeholder), findsNothing);
@@ -100,7 +100,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -109,7 +109,7 @@ void main() {
         child: testChild,
         replacement: const Placeholder(),
         visible: false,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsNothing);
     expect(find.byType(Placeholder), findsOneWidget);
@@ -117,7 +117,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), const Size(800.0, 600.0));
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -126,7 +126,7 @@ void main() {
         child: testChild,
         replacement: const Placeholder(),
         visible: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -148,7 +148,7 @@ void main() {
         maintainSize: true,
         maintainInteractivity: true,
         maintainSemantics: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -170,7 +170,7 @@ void main() {
         maintainSize: true,
         maintainInteractivity: true,
         maintainSemantics: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -191,7 +191,7 @@ void main() {
         maintainAnimation: true,
         maintainSize: true,
         maintainInteractivity: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -212,7 +212,7 @@ void main() {
         maintainAnimation: true,
         maintainSize: true,
         maintainSemantics: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -221,7 +221,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), const Size(84.0, 14.0));
     expect(semantics, expectedSemanticsWhenPresent);
     expect(log, <String>['created new state']);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>['created new state']);
     log.clear();
 
@@ -232,7 +232,7 @@ void main() {
         maintainState: true,
         maintainAnimation: true,
         maintainSize: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -241,7 +241,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), const Size(84.0, 14.0));
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -251,7 +251,7 @@ void main() {
         visible: false,
         maintainState: true,
         maintainAnimation: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.byType(Text, skipOffstage: true), findsNothing);
@@ -261,7 +261,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>['created new state']);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>['created new state']);
     log.clear();
 
@@ -270,7 +270,7 @@ void main() {
         child: testChild,
         visible: false,
         maintainState: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.byType(Text, skipOffstage: true), findsNothing);
@@ -280,7 +280,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>['created new state']);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>['created new state']);
     log.clear();
 
@@ -291,7 +291,7 @@ void main() {
         child: testChild,
         visible: true,
         maintainState: true,
-      )
+      ),
     ));
     expect(find.byType(Text), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -300,7 +300,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), const Size(84.0, 14.0));
     expect(semantics, expectedSemanticsWhenPresent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>['tap']);
     log.clear();
 
@@ -309,7 +309,7 @@ void main() {
         child: testChild,
         visible: false,
         maintainState: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.byType(Text, skipOffstage: true), findsNothing);
@@ -319,7 +319,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -328,7 +328,7 @@ void main() {
         child: testChild,
         visible: true,
         maintainState: true,
-      )
+      ),
     ));
     expect(find.byType(Text), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -346,7 +346,7 @@ void main() {
         child: testChild,
         visible: false,
         maintainState: true,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsOneWidget);
     expect(find.byType(Text, skipOffstage: true), findsNothing);
@@ -356,7 +356,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -366,7 +366,7 @@ void main() {
       child: Visibility(
         child: testChild,
         visible: false,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsNothing);
     expect(find.byType(Placeholder), findsNothing);
@@ -374,7 +374,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -382,7 +382,7 @@ void main() {
       child: Visibility(
         child: testChild,
         visible: true,
-      )
+      ),
     ));
     expect(find.byType(Text), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);
@@ -399,7 +399,7 @@ void main() {
       child: Visibility(
         child: testChild,
         visible: false,
-      )
+      ),
     ));
     expect(find.byType(Text, skipOffstage: false), findsNothing);
     expect(find.byType(Placeholder), findsNothing);
@@ -407,7 +407,7 @@ void main() {
     expect(tester.getSize(find.byType(Visibility)), Size.zero);
     expect(semantics, expectedSemanticsWhenAbsent);
     expect(log, <String>[]);
-    await tester.tap(find.byType(Visibility));
+    await tester.tap(find.byType(Visibility), warnIfMissed: false);
     expect(log, <String>[]);
     log.clear();
 
@@ -415,7 +415,7 @@ void main() {
       child: Visibility(
         child: testChild,
         visible: true,
-      )
+      ),
     ));
     expect(find.byType(Text), findsOneWidget);
     expect(find.text('a true', skipOffstage: false), findsOneWidget);

@@ -5,12 +5,11 @@
 // @dart = 2.8
 
 import 'package:flutter_tools/src/android/android_device.dart';
-import 'package:flutter_tools/src/base/io.dart';
 import 'package:flutter_tools/src/base/logger.dart';
-import 'package:flutter_tools/src/device.dart';
+import 'package:flutter_tools/src/device_port_forwarder.dart';
 
 import '../../src/common.dart';
-import '../../src/context.dart';
+import '../../src/fake_process_manager.dart';
 
 void main() {
   testWithoutContext('AndroidDevicePortForwarder returns the generated host '
@@ -78,7 +77,7 @@ void main() {
       logger: BufferLogger.test(),
     );
 
-    expect(forwarder.forward(123, hostPort: 456), throwsA(isA<ProcessException>()));
+    expect(forwarder.forward(123, hostPort: 456), throwsProcessException());
   });
 
   testWithoutContext('AndroidDevicePortForwarder forwardedPorts returns empty '
@@ -123,7 +122,7 @@ void main() {
 
     await forwarder.dispose();
 
-    expect(processManager.hasRemainingExpectations, false);
+    expect(processManager, hasNoRemainingExpectations);
   });
 
   testWithoutContext('failures to unforward port do not throw if the forward is missing', () async {
@@ -159,6 +158,6 @@ void main() {
       logger: BufferLogger.test(),
     );
 
-    expect(() => forwarder.unforward(ForwardedPort(456, 23)), throwsA(isA<ProcessException>()));
+    expect(() => forwarder.unforward(ForwardedPort(456, 23)), throwsProcessException());
   });
 }

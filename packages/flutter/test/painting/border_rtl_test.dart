@@ -7,7 +7,6 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../rendering/mock_canvas.dart';
-import '../rendering/rendering_tester.dart';
 
 class SillyBorder extends BoxBorder {
   @override
@@ -146,7 +145,7 @@ void main() {
       '   However, only Border and BorderDirectional classes are supported\n'
       '   by this method.\n'
       '   For a more general interpolation method, consider using\n'
-      '   ShapeBorder.lerp instead.\n'
+      '   ShapeBorder.lerp instead.\n',
     ));
   });
 

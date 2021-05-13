@@ -46,10 +46,12 @@ const String _actionText =
 const String _actionCode = 'buttons_action';
 
 class ButtonsDemo extends StatefulWidget {
+  const ButtonsDemo({Key? key}) : super(key: key);
+
   static const String routeName = '/material/buttons';
 
   @override
-  _ButtonsDemoState createState() => _ButtonsDemoState();
+  State<ButtonsDemo> createState() => _ButtonsDemoState();
 }
 
 class _ButtonsDemoState extends State<ButtonsDemo> {

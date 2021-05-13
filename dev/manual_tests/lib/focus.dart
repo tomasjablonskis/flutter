@@ -13,14 +13,14 @@ void main() {
 }
 
 class DemoButton extends StatefulWidget {
-  const DemoButton({this.name, this.canRequestFocus = true, this.autofocus = false});
+  const DemoButton({Key key, this.name, this.canRequestFocus = true, this.autofocus = false}) : super(key: key);
 
   final String name;
   final bool canRequestFocus;
   final bool autofocus;
 
   @override
-  _DemoButtonState createState() => _DemoButtonState();
+  State<DemoButton> createState() => _DemoButtonState();
 }
 
 class _DemoButtonState extends State<DemoButton> {
@@ -77,7 +77,7 @@ class FocusDemo extends StatefulWidget {
   const FocusDemo({Key key}) : super(key: key);
 
   @override
-  _FocusDemoState createState() => _FocusDemoState();
+  State<FocusDemo> createState() => _FocusDemoState();
 }
 
 class _FocusDemoState extends State<FocusDemo> {

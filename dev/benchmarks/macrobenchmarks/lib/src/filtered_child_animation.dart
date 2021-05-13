@@ -12,17 +12,18 @@ enum FilterType {
 }
 
 class FilteredChildAnimationPage extends StatefulWidget {
-  const FilteredChildAnimationPage(this.initialFilterType, [
+  const FilteredChildAnimationPage(this.initialFilterType, {
+    Key key,
     this.initialComplexChild = true,
     this.initialUseRepaintBoundary = true,
-  ]);
+  }) : super(key: key);
 
   final FilterType initialFilterType;
   final bool initialComplexChild;
   final bool initialUseRepaintBoundary;
 
   @override
-  _FilteredChildAnimationPageState createState() => _FilteredChildAnimationPageState();
+  State<FilteredChildAnimationPage> createState() => _FilteredChildAnimationPageState();
 }
 
 class _FilteredChildAnimationPageState extends State<FilteredChildAnimationPage> with SingleTickerProviderStateMixin {

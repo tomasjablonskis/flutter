@@ -10,36 +10,34 @@ import 'package:flutter_tools/src/base/file_system.dart';
 import 'package:flutter_tools/src/base/logger.dart';
 import 'package:flutter_tools/src/fuchsia/fuchsia_dev_finder.dart';
 import 'package:flutter_tools/src/fuchsia/fuchsia_sdk.dart';
-import 'package:mockito/mockito.dart';
-import 'package:process/process.dart';
+import 'package:test/fake.dart';
 
 import '../../src/common.dart';
-import '../../src/context.dart';
+import '../../src/fake_process_manager.dart';
 
 void main() {
-  MockFuchsiaArtifacts mockFuchsiaArtifacts;
+  FakeFuchsiaArtifacts fuchsiaArtifacts;
   BufferLogger logger;
   MemoryFileSystem memoryFileSystem;
   File deviceFinder;
 
   setUp(() {
-    mockFuchsiaArtifacts = MockFuchsiaArtifacts();
+    fuchsiaArtifacts = FakeFuchsiaArtifacts();
     memoryFileSystem = MemoryFileSystem.test();
     logger = BufferLogger.test();
     deviceFinder = memoryFileSystem.file('device-finder');
-
-    when(mockFuchsiaArtifacts.devFinder).thenReturn(deviceFinder);
+    fuchsiaArtifacts.devFinder = deviceFinder;
   });
 
   group('device-finder list', () {
     testWithoutContext('device-finder not found', () {
       final FuchsiaDevFinder fuchsiaDevFinder = FuchsiaDevFinder(
-        fuchsiaArtifacts: mockFuchsiaArtifacts,
+        fuchsiaArtifacts: fuchsiaArtifacts,
         logger: logger,
         processManager: FakeProcessManager.any(),
       );
 
-      expect(() async => await fuchsiaDevFinder.list(),
+      expect(() async => fuchsiaDevFinder.list(),
         throwsToolExit(message: 'Fuchsia device-finder tool not found.'));
     });
 
@@ -55,7 +53,7 @@ void main() {
       ]);
 
       final FuchsiaDevFinder fuchsiaDevFinder = FuchsiaDevFinder(
-        fuchsiaArtifacts: mockFuchsiaArtifacts,
+        fuchsiaArtifacts: fuchsiaArtifacts,
         logger: logger,
         processManager: processManager,
       );
@@ -76,7 +74,7 @@ void main() {
       ]);
 
       final FuchsiaDevFinder fuchsiaDevFinder = FuchsiaDevFinder(
-        fuchsiaArtifacts: mockFuchsiaArtifacts,
+        fuchsiaArtifacts: fuchsiaArtifacts,
         logger: logger,
         processManager: processManager,
       );
@@ -97,7 +95,7 @@ void main() {
       ]);
 
       final FuchsiaDevFinder fuchsiaDevFinder = FuchsiaDevFinder(
-        fuchsiaArtifacts: mockFuchsiaArtifacts,
+        fuchsiaArtifacts: fuchsiaArtifacts,
         logger: logger,
         processManager: processManager,
       );
@@ -124,7 +122,7 @@ void main() {
       ]);
 
       final FuchsiaDevFinder fuchsiaDevFinder = FuchsiaDevFinder(
-        fuchsiaArtifacts: mockFuchsiaArtifacts,
+        fuchsiaArtifacts: fuchsiaArtifacts,
         logger: logger,
         processManager: processManager,
       );
@@ -134,4 +132,7 @@ void main() {
   });
 }
 
-class MockFuchsiaArtifacts extends Mock implements FuchsiaArtifacts {}
+class FakeFuchsiaArtifacts extends Fake implements FuchsiaArtifacts {
+  @override
+  File devFinder;
+}

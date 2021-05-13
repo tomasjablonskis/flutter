@@ -115,4 +115,28 @@ void main() {
   NoDefaultCupertinoThemeData.resolveFrom(context, nullOk: false);
   CupertinoTextThemeData.resolveFrom(context, nullOk: true);
   CupertinoTextThemeData.resolveFrom(context, nullOk: false);
+
+  // Changes made in https://github.com/flutter/flutter/pull/72043
+  CupertinoTextField(maxLengthEnforced: true);
+  CupertinoTextField(maxLengthEnforced: false);
+  CupertinoTextField.borderless(maxLengthEnforced: true);
+  CupertinoTextField.borderless(maxLengthEnforced: false);
+  final CupertinoTextField textField;
+  textField.maxLengthEnforced;
+
+  // Changes made in https://github.com/flutter/flutter/pull/59127
+  const BottomNavigationBarItem bottomNavigationBarItem = BottomNavigationBarItem(title: myTitle);
+  bottomNavigationBarItem.title;
+
+  // Changes made in https://github.com/flutter/flutter/pull/79160
+  Draggable draggable = Draggable();
+  draggable = Draggable(dragAnchor: DragAnchor.child);
+  draggable = Draggable(dragAnchor: DragAnchor.pointer);
+  draggable.dragAnchor;
+
+  // Changes made in https://github.com/flutter/flutter/pull/79160
+  LongPressDraggable longPressDraggable = LongPressDraggable();
+  longPressDraggable = LongPressDraggable(dragAnchor: DragAnchor.child);
+  longPressDraggable = LongPressDraggable(dragAnchor: DragAnchor.pointer);
+  longPressDraggable.dragAnchor;
 }

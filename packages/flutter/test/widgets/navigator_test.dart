@@ -1285,7 +1285,7 @@ void main() {
     expect(log, <String>['building B', 'building C', 'found C', 'building D']);
   });
 
-  testWidgets('Routes don\'t rebuild just because their animations ended', (WidgetTester tester) async {
+  testWidgets("Routes don't rebuild just because their animations ended", (WidgetTester tester) async {
     final GlobalKey<NavigatorState> key = GlobalKey<NavigatorState>();
     final List<String> log = <String>[];
     Route<dynamic>? nextRoute = PageRouteBuilder<int>(
@@ -1582,6 +1582,7 @@ void main() {
 
     final dynamic exception = tester.takeException();
     expect(exception, isA<String>());
+    // ignore: avoid_dynamic_calls
     expect(exception.startsWith('Could not navigate to initial route.'), isTrue);
 
     // Only the root route should've been pushed.

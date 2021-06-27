@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'dart:math' as math;
-
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -211,101 +209,14 @@ void main() {
     // By default, clipBehavior should be Clip.none
     final RenderWrap defaultWrap = RenderWrap(textDirection: TextDirection.ltr, children: <RenderBox>[box200x200]);
     layout(defaultWrap, constraints: viewport, phase: EnginePhase.composite, onErrors: expectOverflowedErrors);
-    defaultWrap.paint(context, Offset.zero);
+    context.paintChild(defaultWrap, Offset.zero);
     expect(context.clipBehavior, equals(Clip.none));
 
     for (final Clip clip in Clip.values) {
       final RenderWrap wrap = RenderWrap(textDirection: TextDirection.ltr, children: <RenderBox>[box200x200], clipBehavior: clip);
       layout(wrap, constraints: viewport, phase: EnginePhase.composite, onErrors: expectOverflowedErrors);
-      wrap.paint(context, Offset.zero);
+      context.paintChild(wrap, Offset.zero);
       expect(context.clipBehavior, equals(clip));
     }
   });
-
-  test('Compute max intrinsic height with spacing', () {
-    const double itemWidth = 64;
-    const double itemHeight = 32;
-
-    final RenderBox child = RenderConstrainedBox(
-      additionalConstraints: const BoxConstraints.tightFor(
-        width: itemWidth,
-        height: itemHeight,
-      ),
-    );
-
-    final RenderWrap renderWrap = RenderWrap();
-    renderWrap.add(child);
-
-    renderWrap.spacing = 5;
-    renderWrap.direction = Axis.vertical;
-
-    expect(renderWrap.computeMaxIntrinsicHeight(double.infinity), itemHeight);
-
-
-    final List<RenderBox> children = <RenderBox>[
-      RenderConstrainedBox(
-        additionalConstraints: const BoxConstraints.tightFor(
-          width: itemWidth,
-          height: itemHeight,
-        ),
-      ),
-      RenderConstrainedBox(
-        additionalConstraints: const BoxConstraints.tightFor(
-          width: itemWidth,
-          height: itemHeight,
-        ),
-      ),
-    ];
-
-    children.forEach(renderWrap.add);
-
-    final double childrenHeight = renderWrap.childCount * itemHeight;
-    final double spacingHeight = math.max(renderWrap.childCount - 1, 0) * renderWrap.spacing;
-
-    expect(renderWrap.computeMaxIntrinsicHeight(double.infinity), childrenHeight + spacingHeight);
-  });
-
-  test('Compute max intrinsic width with spacing', () {
-    const double itemWidth = 64;
-    const double itemHeight = 32;
-
-    final RenderBox child = RenderConstrainedBox(
-      additionalConstraints: const BoxConstraints.tightFor(
-        width: itemWidth,
-        height: itemHeight,
-      ),
-    );
-
-    final RenderWrap renderWrap = RenderWrap();
-    renderWrap.add(child);
-
-    renderWrap.spacing = 5;
-    renderWrap.direction = Axis.horizontal;
-
-    expect(renderWrap.computeMaxIntrinsicWidth(double.infinity), itemWidth);
-
-
-    final List<RenderBox> children = <RenderBox>[
-      RenderConstrainedBox(
-        additionalConstraints: const BoxConstraints.tightFor(
-          width: itemWidth,
-          height: itemHeight,
-        ),
-      ),
-      RenderConstrainedBox(
-        additionalConstraints: const BoxConstraints.tightFor(
-          width: itemWidth,
-          height: itemHeight,
-        ),
-      ),
-    ];
-
-    children.forEach(renderWrap.add);
-
-    final double childrenWidth = renderWrap.childCount * itemWidth;
-    final double spacingWidth = math.max(renderWrap.childCount - 1, 0) * renderWrap.spacing;
-
-    expect(renderWrap.computeMaxIntrinsicWidth(double.infinity), childrenWidth + spacingWidth);
-  });
-
 }

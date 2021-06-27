@@ -192,6 +192,22 @@ void main() {
     );
   });
 
+  testWithoutContext('serveAndAnnounceDevTools will bail if launching devtools fails', () async {
+    final ResidentDevtoolsHandler handler = FlutterResidentDevtoolsHandler(
+      FakeDevtoolsLauncher()..activeDevToolsServer = null,
+      FakeResidentRunner(),
+      BufferLogger.test(),
+    );
+    final FakeVmServiceHost fakeVmServiceHost = FakeVmServiceHost(requests: <VmServiceExpectation>[], httpAddress: Uri.parse('http://localhost:1234'));
+
+    final FakeFlutterDevice device = FakeFlutterDevice()
+      ..vmService = fakeVmServiceHost.vmService;
+
+    await handler.serveAndAnnounceDevTools(
+      flutterDevices: <FlutterDevice>[device],
+    );
+  });
+
   testWithoutContext('serveAndAnnounceDevTools with web device', () async {
     final ResidentDevtoolsHandler handler = FlutterResidentDevtoolsHandler(
       FakeDevtoolsLauncher()..activeDevToolsServer = DevToolsServerAddress('localhost', 8080),
@@ -205,11 +221,7 @@ void main() {
           'streamId': 'Isolate',
         }
       ),
-      FakeVmServiceRequest(
-        method: 'getVM',
-        jsonResponse: fakeVM.toJson(),
-        args: <String, Object>{},
-      ),
+      listViews,
       FakeVmServiceRequest(
         method: 'getIsolate',
         jsonResponse: isolate.toJson(),
@@ -414,6 +426,13 @@ void main() {
 
     expect(handler.launchDevToolsInBrowser(flutterDevices: <FlutterDevice>[]), isTrue);
     expect(handler.launchedInBrowser, isTrue);
+  });
+
+  testWithoutContext('Converts a VmService URI with a query parameter to a pretty display string', () {
+    const String value = 'http://127.0.0.1:9100?uri=http%3A%2F%2F127.0.0.1%3A57922%2F_MXpzytpH20%3D%2F';
+    final Uri uri = Uri.parse(value);
+
+    expect(urlToDisplayString(uri), 'http://127.0.0.1:9100?uri=http://127.0.0.1:57922/_MXpzytpH20=/');
   });
 }
 

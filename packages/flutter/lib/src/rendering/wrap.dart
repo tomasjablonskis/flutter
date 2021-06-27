@@ -421,7 +421,7 @@ class RenderWrap extends RenderBox
   double computeMaxIntrinsicWidth(double height) {
     switch (direction) {
       case Axis.horizontal:
-        double width = math.max(childCount - 1, 0) * spacing;
+        double width = 0.0;
         RenderBox? child = firstChild;
         while (child != null) {
           width += child.getMaxIntrinsicWidth(double.infinity);
@@ -455,7 +455,7 @@ class RenderWrap extends RenderBox
       case Axis.horizontal:
         return computeDryLayout(BoxConstraints(maxWidth: width)).height;
       case Axis.vertical:
-        double height = math.max(childCount - 1, 0) * spacing;
+        double height = 0.0;
         RenderBox? child = firstChild;
         while (child != null) {
           height += child.getMaxIntrinsicHeight(double.infinity);
@@ -761,21 +761,27 @@ class RenderWrap extends RenderBox
     // TODO(ianh): move the debug flex overflow paint logic somewhere common so
     // it can be reused here
     if (_hasVisualOverflow && clipBehavior != Clip.none) {
-      _clipRectLayer = context.pushClipRect(
+      _clipRectLayer.layer = context.pushClipRect(
         needsCompositing,
         offset,
         Offset.zero & size,
         defaultPaint,
         clipBehavior: clipBehavior,
-        oldLayer: _clipRectLayer,
+        oldLayer: _clipRectLayer.layer,
       );
     } else {
-      _clipRectLayer = null;
+      _clipRectLayer.layer = null;
       defaultPaint(context, offset);
     }
   }
 
-  ClipRectLayer? _clipRectLayer;
+  final LayerHandle<ClipRectLayer> _clipRectLayer = LayerHandle<ClipRectLayer>();
+
+  @override
+  void dispose() {
+    _clipRectLayer.layer = null;
+    super.dispose();
+  }
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
